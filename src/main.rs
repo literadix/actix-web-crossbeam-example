@@ -25,7 +25,8 @@ async fn main() -> std::io::Result<()> {
     // where `T` is the type of the message to be transferred
     // (type annotation is superfluous)
     let (tx, rx) = unbounded();
-    let worker = thread::spawn(move || loop {
+
+    let _worker = thread::spawn(move || loop {
         let val: String = rx.recv().unwrap();
         thread::sleep(Duration::from_secs(1));
         println!("received: {}", val)
@@ -43,7 +44,7 @@ async fn main() -> std::io::Result<()> {
     {
         Ok(_) => {
             println!("finished");
-            worker.join().expect("oops! the child thread panicked");
+            // _worker.join().expect("oops! the child thread panicked");
             Ok(())
         }
         Err(e) => {
