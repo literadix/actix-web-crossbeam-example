@@ -6,17 +6,26 @@ use chrono::{SecondsFormat, Utc};
 use std::thread;
 use std::time::Duration;
 
-async fn greet(req: HttpRequest, txs: web::Data<Sender<String>>) -> impl Responder {
+async fn greet(req: HttpRequest, txs: web::Data<Sender<Message>>) -> impl Responder {
     // get name from url
     let name = req.match_info().get("name").unwrap_or("World");
 
     // send to channel
     let now = Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
-    let msg = format!("{}: {}", now, name);
-    txs.send(msg).unwrap();
+    txs.send(Message {
+        sent: format!("{}", now),
+        what: name.to_string(),
+    })
+    .unwrap();
 
     // send result back to user
     format!("Hello {}!", &name)
+}
+
+#[derive(Debug)]
+struct Message {
+    sent: String,
+    what: String,
 }
 
 #[actix_web::main]
@@ -27,9 +36,9 @@ async fn main() -> std::io::Result<()> {
     let (tx, rx) = unbounded();
 
     let _worker = thread::spawn(move || loop {
-        let val: String = rx.recv().unwrap();
+        let val: Message = rx.recv().unwrap();
         thread::sleep(Duration::from_secs(1));
-        println!("received: {}", val)
+        println!("received: {:?}", val)
     });
 
     match HttpServer::new(move || {
